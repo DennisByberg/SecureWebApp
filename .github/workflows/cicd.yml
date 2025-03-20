@@ -1,4 +1,4 @@
-name: CI för SecureWebApp
+name: CI/CD för SecureWebApp
 
 on:
   push:
@@ -31,3 +31,26 @@ jobs:
         with:
           name: app-artifacts
           path: ./publish
+
+  deploy:
+    runs-on: self-hosted
+    needs: build
+
+    steps:
+      - name: Download the artifacts from Github (from the build job)
+        uses: actions/download-artifact@v4
+        with:
+          name: app-artifacts
+
+      - name: Stop the application service
+        run: |
+          sudo systemctl stop SecureWebApp.service
+
+      - name: Deploy the the application
+        run: |
+          sudo rm -Rf /opt/SecureWebApp || true
+          sudo cp -r /home/azureuser/actions-runner/_work/SecureWebApp/SecureWebApp/ /opt/SecureWebApp
+
+      - name: Start the application service
+        run: |
+          sudo systemctl start SecureWebApp.service

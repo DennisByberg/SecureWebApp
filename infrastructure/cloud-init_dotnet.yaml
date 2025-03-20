@@ -1,0 +1,46 @@
+#cloud-config
+
+package_update: true
+
+runcmd:
+  # Install necessary tools and .NET Runtime 9.0
+  - apt-get install -y software-properties-common || exit 1
+  - add-apt-repository -y ppa:dotnet/backports || exit 1
+  - apt-get update || exit 1
+  - apt-get install -y aspnetcore-runtime-9.0 || exit 1
+
+  # Create application directory and set permissions
+  - mkdir -p /opt/SecureWebApp
+  - chown -R www-data:www-data /opt/SecureWebApp
+
+  # Start and verify the service
+  - systemctl start SecureWebApp.service
+  - systemctl status SecureWebApp.service || exit 1
+
+write_files:
+  - path: /etc/systemd/system/SecureWebApp.service
+    content: |
+      [Unit]
+      Description=ASP.NET Web App running on Ubuntu
+
+      [Service]
+      WorkingDirectory=/opt/SecureWebApp
+      ExecStart=/usr/bin/dotnet /opt/SecureWebApp/SecureWebApp.dll
+      Restart=always
+      RestartSec=10
+      KillSignal=SIGINT
+      SyslogIdentifier=SecureWebApp
+      User=www-data
+      Environment=ASPNETCORE_ENVIRONMENT=Production
+      Environment=DOTNET_PRINT_TELEMETRY_MESSAGE=false
+      Environment="ASPNETCORE_URLS=http://*:5000"
+
+      [Install]
+      WantedBy=multi-user.target
+    owner: root:root
+    permissions: '0644'
+
+systemd:
+  units:
+    - name: SecureWebApp.service
+      enabled: true
