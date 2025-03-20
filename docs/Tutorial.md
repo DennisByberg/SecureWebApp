@@ -22,19 +22,19 @@ Lite tråkigt är det emellertid att hackergruppen "Cloud Just Means Rain" stän
 
 ### Steg 1: Web-App redo för versionshantering.
 
-Skapandet av våran web-app är nu redo för att versionshanteras och vi har den fungerande lokalt.
+Nu är vår webbapplikation redo för versionshantering och fungerar lokalt.
 
 ![alt text]({3E35C3E5-1196-4418-A017-271538963CC9}.png)
 
-Vi ska nu gå igenom några steg för att få upp den på vårat Github-repo där vi kommer att versionshantera våran app.
+Vi ska nu gå igenom några steg för att ladda upp den till vårt GitHub-repo där vi kommer att versionshantera vår app.
 
-Vi börjar med skapa en `.gitignore` fil för att inte lägga upp allt som vi inte behöver på `GitHub`
+Vi börjar med att skapa en `.gitignore`-fil för att undvika att ladda upp filer som vi inte behöver på `GitHub`.
 
 ```bash
 dotnet new gitignore
 ```
 
-Vårat nästa steg blir att initialisera vårat git repo och göra vår första commit.
+Nästa steg är att initialisera vårt git-repo och göra vår första commit.
 
 ```bash
 git init
@@ -48,4 +48,51 @@ git add .
 git commit -m "Initial Commit"
 ```
 
-Push to Github: Use VSCode’s integrated git functionality to connect your local repository to Github and push your initial commit. Follow the prompts in VSCode to authenticate and specify your repository details on Github.
+Till sist, använd VSCode:s integrerade git-funktionalitet för att koppla ditt lokala repository till GitHub och pusha din första commit. Följ anvisningarna i VSCode för att autentisera och specificera dina repository-detaljer på GitHub.
+
+När vi är klara borde vi ha vårt repo på GitHub:
+![alt text]({9523CA75-3682-4742-B21A-D1EE515DD058}.png)
+
+<hr>
+
+### Steg 2: Konfigurera CI-arbetsflödet
+
+Nu ska vi ta detta till nästa nivå och sätta upp våran CI arbetsflöde
+
+Vi börjar med att skapa en `cicd.yml` i `.github/workflows`
+
+```yml
+name: CI för SecureWebApp
+
+on:
+  push:
+    branches:
+      - 'master'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Installera .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Checka ut detta repo
+        uses: actions/checkout@v4
+
+      - name: Återställ beroenden (installera NuGet-paket)
+        run: dotnet restore
+
+      - name: Bygg och publicera appen
+        run: |
+          dotnet build --no-restore
+          dotnet publish -c Release -o ./publish
+
+      - name: Ladda upp app-artifacts till GitHub
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-artifacts
+          path: ./publish
+```
