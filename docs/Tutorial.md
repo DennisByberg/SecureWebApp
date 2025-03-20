@@ -320,14 +320,14 @@ sudo ./svc.sh start
 
 Nu är vi redo att pusha vår kod till GitHub. Detta kommer att trigga en körning av vårt CI-arbetsflöde, vilket automatiskt kommer att bygga och publicera vår applikation samt distribuera den till vår virtuella maskin på Azure.
 
-För att se om det funkar gör vi en ändring i vår kod. Vi lägger till ett utropstecken i `Views/Home/Index.cshtml`.
+För att se om det funkar gör vi en ändring i vår kod. Vi lägger till två utropstecken i `Views/Home/Index.cshtml`.
 
 ```html
 @{ ViewData["Title"] = "Home Page"; }
 
 <div class="text-center">
   <h1 class="display-4">Welcome to SecureWebApp</h1>
-  <p>this website is created by Dennis Byberg!</p>
+  <p>this website is created by Dennis Byberg!!</p>
 </div>
 ```
 
