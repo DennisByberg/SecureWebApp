@@ -47,3 +47,5 @@ git add .
 ```bash
 git commit -m "Initial Commit"
 ```
+
+Push to Github: Use VSCode’s integrated git functionality to connect your local repository to Github and push your initial commit. Follow the prompts in VSCode to authenticate and specify your repository details on Github.
