@@ -96,3 +96,13 @@ jobs:
           name: app-artifacts
           path: ./publish
 ```
+
+När vi är klara med detta så pushar vi vår kod till GitHub. Detta kommer att trigga en körning av vårt CI-arbetsflöde, vilket automatiskt kommer att bygga och publicera vår applikation samt ladda upp artefakterna till GitHub.
+
+![alt text]({A539FFBD-2994-458D-85B1-E668718EBBD9}.png)
+
+#### Slutsats
+
+Genom att följa dessa steg har vi nu satt upp ett automatiserat CI-arbetsflöde som hjälper oss att säkerställa att vår applikation alltid är byggd och publicerad korrekt.
+
+<hr>
