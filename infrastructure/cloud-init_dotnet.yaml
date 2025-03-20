@@ -1,23 +1,19 @@
 #cloud-config
 
-package_update: true # Uppdatera paketlistan
+package_update: true
 
 runcmd:
-  # Installera nödvändiga verktyg och .NET Runtime 9.0
   - apt-get install -y software-properties-common || exit 1
   - add-apt-repository -y ppa:dotnet/backports || exit 1
   - apt-get update || exit 1
   - apt-get install -y aspnetcore-runtime-9.0 || exit 1
 
-  # Skapa applikationskatalog och sätt rättigheter
   - mkdir -p /opt/SecureWebApp
   - chown -R www-data:www-data /opt/SecureWebApp
 
-  # Hämta och packa upp applikationen
   - systemctl start SecureWebApp.service
   - systemctl status SecureWebApp.service || exit 1
 
-# Skapa en systemd service för att starta applikationen
 write_files:
   - path: /etc/systemd/system/SecureWebApp.service
     content: |
@@ -41,7 +37,6 @@ write_files:
     owner: root:root
     permissions: '0644'
 
-# Aktivera systemd service
 systemd:
   units:
     - name: SecureWebApp.service
