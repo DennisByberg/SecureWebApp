@@ -24,7 +24,7 @@ Lite tråkigt är det emellertid att hackergruppen "Cloud Just Means Rain" stän
 
 Nu är vår webbapplikation redo för versionshantering och fungerar lokalt.
 
-![alt text]({3E35C3E5-1196-4418-A017-271538963CC9}.png)
+![alt text](./images/{3E35C3E5-1196-4418-A017-271538963CC9}.png)
 
 Vi ska nu gå igenom några steg för att ladda upp den till vårt GitHub-repo där vi kommer att versionshantera vår app.
 
@@ -51,7 +51,7 @@ git commit -m "Initial Commit"
 Till sist, använd VSCode:s integrerade git-funktionalitet för att koppla ditt lokala repository till GitHub och pusha din första commit. Följ anvisningarna i VSCode för att autentisera och specificera dina repository-detaljer på GitHub.
 
 När vi är klara borde vi ha vårt repo på GitHub:
-![alt text]({9523CA75-3682-4742-B21A-D1EE515DD058}.png)
+![alt text](./images/{9523CA75-3682-4742-B21A-D1EE515DD058}.png)
 
 <hr>
 
@@ -99,10 +99,236 @@ jobs:
 
 När vi är klara med detta så pushar vi vår kod till GitHub. Detta kommer att trigga en körning av vårt CI-arbetsflöde, vilket automatiskt kommer att bygga och publicera vår applikation samt ladda upp artefakterna till GitHub.
 
-![alt text]({A539FFBD-2994-458D-85B1-E668718EBBD9}.png)
+![alt text](./images/{A539FFBD-2994-458D-85B1-E668718EBBD9}.png)
 
 #### Slutsats
 
 Genom att följa dessa steg har vi nu satt upp ett automatiserat CI-arbetsflöde som hjälper oss att säkerställa att vår applikation alltid är byggd och publicerad korrekt.
 
 <hr>
+
+### Steg 3: Provisionera Azure VM
+
+Vi ska nu provisionera en virtuell maskin på Azure för att driftsätta vår webbapplikation.
+
+Jag kommer välja att använda Azure CLI för att skapa vår virtuella maskin. Skapa en ny mapp i ditt projekt som heter `infrastructure` och skapa en ny fil som heter `01.provision-vm.sh`.
+I denna fil kommer vi att skriva vår skript för att skapa vår virtuella maskin.
+
+```bash
+#!/bin/bash
+
+RESOURCE_GROUP="SecureWebAppRG" # Resursgrupp för VM
+VM_NAME="SecureWebAppVM"        # Namn på VM
+VM_PORT="5000"                   # Port för applikationen
+LOCATION="swedencentral"         # Plats för VM
+IMAGE="Ubuntu2204"               # Image för VM
+SIZE="Standard_B1s"              # Storlek på VM, t.ex. Standard_B1s, Standard_D2s_v3
+ADMIN_USERNAME="azureuser"       # Användarnamn för VM
+NSG_NAME="${VM_NAME}-nsg"        # NSG för VM
+
+CLOUD_INIT_FILE="cloud-init_dotnet.yaml" # Cloud-init-fil för att konfigurera VM
+
+# Skapa en resursgrupp
+az group create \
+    --location $LOCATION \
+    --name $RESOURCE_GROUP
+
+# Skapa en NSG
+az network nsg create \
+    --resource-group $RESOURCE_GROUP \
+    --name $NSG_NAME
+
+# Skapa en regel för att tillåta SSH-anslutningar
+az network nsg rule create \
+    --resource-group $RESOURCE_GROUP \
+    --nsg-name $NSG_NAME \
+    --name "AllowSSH" \
+    --priority 1000 \
+    --destination-port-ranges 22 \
+    --direction Inbound \
+    --access Allow \
+    --protocol Tcp \
+    --description "Allow SSH connections"
+
+# Skapa en regel för att tillåta anslutningar till applikationen
+az network nsg rule create \
+    --resource-group $RESOURCE_GROUP \
+    --nsg-name $NSG_NAME \
+    --name "AllowAppTraffic" \
+    --priority 1010 \
+    --destination-port-ranges $VM_PORT \
+    --direction Inbound \
+    --access Allow \
+    --protocol Tcp \
+    --description "Allow application traffic"
+
+# Provisionera en VM
+az vm create \
+    --name $VM_NAME \
+    --resource-group $RESOURCE_GROUP \
+    --image $IMAGE \
+    --size $SIZE \
+    --generate-ssh-keys \
+    --admin-username $ADMIN_USERNAME \
+    --custom-data @$CLOUD_INIT_FILE \
+    --nsg $NSG_NAME
+```
+
+Till denna skapar vi en cloud-init-fil som heter `cloud-init_dotnet.yaml`. Glöm inte att navigera till din infrastruktur-mapp efter att du har skapat den när du följer nästa steg.
+
+```yaml
+#cloud-config
+
+package_update: true # Uppdatera paketlistan
+
+runcmd:
+  # Installera nödvändiga verktyg och .NET Runtime 9.0
+  - apt-get install -y software-properties-common || exit 1
+  - add-apt-repository -y ppa:dotnet/backports || exit 1
+  - apt-get update || exit 1
+  - apt-get install -y aspnetcore-runtime-9.0 || exit 1
+
+  # Skapa applikationskatalog och sätt rättigheter
+  - mkdir -p /opt/SecureWebApp
+  - chown -R www-data:www-data /opt/SecureWebApp
+
+  # Hämta och packa upp applikationen
+  - systemctl start SecureWebApp.service
+  - systemctl status SecureWebApp.service || exit 1
+
+# Skapa en systemd service för att starta applikationen
+write_files:
+  - path: /etc/systemd/system/SecureWebApp.service
+    content: |
+      [Unit]
+      Description=ASP.NET Web App running on Ubuntu
+
+      [Service]
+      WorkingDirectory=/opt/SecureWebApp
+      ExecStart=/usr/bin/dotnet /opt/SecureWebApp/SecureWebApp.dll
+      Restart=always
+      RestartSec=10
+      KillSignal=SIGINT
+      SyslogIdentifier=SecureWebApp
+      User=www-data
+      Environment=ASPNETCORE_ENVIRONMENT=Production
+      Environment=DOTNET_PRINT_TELEMETRY_MESSAGE=false
+      Environment="ASPNETCORE_URLS=http://*:5000"
+
+      [Install]
+      WantedBy=multi-user.target
+    owner: root:root
+    permissions: '0644'
+
+# Aktivera systemd service
+systemd:
+  units:
+    - name: SecureWebApp.service
+      enabled: true
+```
+
+Ge rätt behörigheter till skriptet:
+
+```bash
+chmod +x 01.provision_vm.sh
+```
+
+Nu är vi redo att köra skriptet:
+
+```bash
+./01.provision_vm.sh
+```
+
+När skriptet är klart, kan vi testa att ansluta till vår VM via SSH:
+
+```bash
+# Byt ut <public_ip> mot den publika IP-adressen för din VM
+ssh azureuser@<public_ip>
+```
+
+Du borde nu vara ansluten till din virtuella maskin.
+
+![alt text](./images/{915B6E6D-3F87-4DA4-87BC-3FBD737DC9E3}.png)
+
+#### Slutsats
+
+Genom att följa dessa steg har vi nu provisionerat en virtuell maskin på Azure för att driftsätta vår webbapplikation. Vi har också konfigurerat en cloud-init-fil för att installera nödvändiga verktyg och starta vår applikation som en systemd-tjänst.
+
+<hr>
+
+### Steg 4: Konfigurera distributionsarbetsflödet & Sätta upp en Self-Hosted Runner på våran VM
+
+Nu ska vi konfigurera ett distributionsarbetsflöde för att automatiskt distribuera vår applikation till vår virtuella maskin på Azure.
+
+Vi börjar med att uppdatera våran `cicd.yml`-fil för att inkludera distributionsjobbet.
+
+```yml
+deploy:
+  runs-on: self-hosted
+  needs: build
+
+  steps:
+    - name: Download the artifacts from Github (from the build job)
+      uses: actions/download-artifact@v4
+      with:
+        name: app-artifacts
+
+    - name: Stop the application service
+      run: |
+        sudo systemctl stop SecureWebApp.service
+
+    - name: Deploy the the application
+      run: |
+        sudo rm -Rf /opt/SecureWebApp || true
+        sudo cp -r /home/azureuser/actions-runner/_work/SecureWebApp/SecureWebApp/ /opt/SecureWebApp
+
+    - name: Start the application service
+      run: |
+        sudo systemctl start SecureWebApp.service
+```
+
+Nu ska vi sätta upp en Self-Hosted runner.
+
+1. Navigera till ditt GitHub-repo och klicka på `Actions`.
+2. Välj `Runners` i sidomenyn.
+3. Tryck på `New runner`.
+4. Tryck på `New-self-hosted runner`.
+5. Välj `Linux` och `x64`.
+6. Följ anvisningarna för att ladda ner och installera runner på din VM.
+
+Vi kan nu byta ut våran `runs-on: ubuntu-latest` till `runs-on: self-hosted` i båda våra jobs i `cicd.yml`.
+
+```yml
+build:
+  runs-on: self-hosted
+
+deploy:
+  runs-on: self-hosted
+```
+
+När vi är klara med detta så ska vi få runnern att köra som en service istället. Detta gör så att den körs automatiskt i bakgrunden så vi slipper att starta den manuellt varje gång.
+
+```bash
+sudo ./svc.sh install azureuser
+```
+
+Nu kan vi starta vår runner:
+
+```bash
+sudo ./svc.sh start
+```
+
+Nu är vi redo att pusha vår kod till GitHub. Detta kommer att trigga en körning av vårt CI-arbetsflöde, vilket automatiskt kommer att bygga och publicera vår applikation samt distribuera den till vår virtuella maskin på Azure.
+
+För att se om det funkar gör vi en ändring i vår kod. Vi lägger till ett utropstecken i `Views/Home/Index.cshtml`.
+
+```html
+@{ ViewData["Title"] = "Home Page"; }
+
+<div class="text-center">
+  <h1 class="display-4">Welcome to SecureWebApp</h1>
+  <p>this website is created by Dennis Byberg!</p>
+</div>
+```
+
+LETS PUSH IT!
