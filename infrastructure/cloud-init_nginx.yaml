@@ -1,0 +1,30 @@
+#cloud-config
+
+package_update: true
+
+runcmd:
+  - apt-get install -y nginx || exit 1
+  - systemctl start nginx
+  - systemctl enable nginx
+
+write_files:
+  - path: /etc/nginx/sites-available/default
+    content: |
+      server {
+          listen 80;
+
+          location / {
+              proxy_pass http://<APP_SERVER_IP>:5000;
+              proxy_set_header Host $host;
+              proxy_set_header X-Real-IP $remote_addr;
+              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+              proxy_set_header X-Forwarded-Proto $scheme;
+          }
+      }
+    owner: root:root
+    permissions: '0644'
+
+systemd:
+  units:
+    - name: nginx.service
+      enabled: true

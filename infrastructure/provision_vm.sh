@@ -1,45 +1,64 @@
 #!/bin/bash
 
-# ------------------------------------
-# Sammanfattning av vad som skapas:
-# ------------------------------------
-# Resursgrupp
-# VM med OS-disk
-# Virtuellt nätverk med subnät
-# Offentlig IP-adress
-# Nätverksgränssnitt
-# Nätverkssäkerhetsgrupp med regler för: SSH (port 22) & applikationsport (5000)
-# SSH-nyckelpar för autentisering
-# Lagringskonto för diagnostik
-# ------------------------------------
-
-RESOURCE_GROUP="SecureWebAppRG" # Resource group for the VM
-VM_NAME="SecureWebAppVM"        # Name of the VM
-VM_PORT="5000"                  # Port to open for the application
-LOCATION="swedencentral"        # Location of the VM
-IMAGE="Ubuntu2204"              # Image for the VM
-SIZE="Standard_B1s"             # Size of the VM
-ADMIN_USERNAME="azureuser"      # Username for the VM
-
-CLOUD_INIT_FILE="cloud-init_dotnet.yaml" # Cloud-init file for configuring the VM
+# Repetitive Variables || Important Variables
+RESOURCE_GROUP="SecureWebAppRG"
+VNET_NAME="SecureWebAppVNet"
+SUBNET_NAME="SecureWebAppSubnet"
+NSG_NAME="SecureWebAppNSG"
+VM_NAME="SecureWebAppVM"
 
 # Create a resource group
 az group create \
-    --location $LOCATION \
+    --location swedencentral \
     --name $RESOURCE_GROUP
 
-# Provision a VM
+# Create a virtual network
+az network vnet create \
+    --resource-group $RESOURCE_GROUP \
+    --name $VNET_NAME \
+    --address-prefix 10.1.0.0/16 \
+    --subnet-name $SUBNET_NAME \
+    --subnet-prefix 10.1.0.0/24
+
+# Create a network security group
+az network nsg create \
+    --resource-group $RESOURCE_GROUP \
+    --name $NSG_NAME
+
+# Create NSG rules for SSH and application port
+az network nsg rule create \
+    --resource-group $RESOURCE_GROUP \
+    --nsg-name $NSG_NAME \
+    --name Allow-SSH \
+    --protocol tcp \
+    --priority 1000 \
+    --destination-port-range 22 \
+    --access allow
+
+az network nsg rule create \
+    --resource-group $RESOURCE_GROUP \
+    --nsg-name $NSG_NAME \
+    --name Allow-App-Port \
+    --protocol tcp \
+    --priority 1001 \
+    --destination-port-range 5000 \
+    --access allow
+
+# Associate NSG with the subnet
+az network vnet subnet update \
+    --resource-group $RESOURCE_GROUP \
+    --vnet-name $VNET_NAME \
+    --name $SUBNET_NAME \
+    --network-security-group $NSG_NAME
+
+# Provision a VM with cloud-init
 az vm create \
     --name $VM_NAME \
     --resource-group $RESOURCE_GROUP \
-    --image $IMAGE \
-    --size $SIZE \
+    --image Ubuntu2204 \
+    --size Standard_B1s \
+    --vnet-name $VNET_NAME \
+    --subnet $SUBNET_NAME \
     --generate-ssh-keys \
-    --admin-username $ADMIN_USERNAME \
-    --custom-data @$CLOUD_INIT_FILE
-
-# Open a port for the application
-az vm open-port \
-    --port $VM_PORT \
-    --resource-group $RESOURCE_GROUP \
-    --name $VM_NAME
+    --admin-username azureuser \
+    --custom-data @cloud-init_dotnet.yaml

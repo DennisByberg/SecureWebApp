@@ -20,6 +20,10 @@ Lite tråkigt är det emellertid att hackergruppen "Cloud Just Means Rain" stän
 
 ## Git & CI/CD
 
+## Slutmål
+
+![alt text]({FE1CAB4E-6B51-445A-BC78-72C10B2537C9}.png)
+
 ### Steg 1: Web-App redo för versionshantering.
 
 Nu är vår webbapplikation redo för versionshantering och fungerar lokalt.
@@ -281,8 +285,6 @@ Nu ska vi sätta upp en Self-Hosted runner.
 
 Nu är vi redo att pusha vår kod till GitHub. Detta kommer att trigga en körning av vårt CI-arbetsflöde, vilket automatiskt kommer att bygga och publicera vår applikation samt distribuera den till vår virtuella maskin på Azure.
 
-OBS! Glöm inte att att din Runner måste vara igång för att ditt arbetsflöde ska fungera.
-
 För att se om det funkar gör vi en ändring i vår kod. Vi lägger till ett utropstecken i `Views/Home/Index.cshtml`.
 
 ```html
@@ -301,3 +303,29 @@ LETS PUSH IT!
 Nu kan vi navigera till våran VMs publika IP-adress och se att ändringen har tagit effekt och att sidan faktiskt är uppe och rullar.
 
 ![alt text](./images/{7B7F3F5F-6D9B-4B0A-8B8B-B139BCCD093D}.png)
+
+#### Sammanfattning
+
+**Azure**:
+
+- Vi har en VM på Azure som kör våran applikation.
+- VM:n är konfigurerad med en nätverkssäkerhetsgrupp (NSG) som tillåter trafik på port 5000 (HTTP) och port 22 (SSH).
+- VM:n är en del av ett virtuellt nätverk (VNet) med ett subnät.
+
+**CI/CD**:
+
+- Vi använder GitHub Actions för att automatisera bygg- och distributionsprocessen.
+- CI-pipelinen bygger och publicerar våran applikation och laddar upp artefakterna till GitHub.
+- CD-pipelinen distribuerar applikationen till våran Azure VM.
+
+**Self-Hosted Runner**:
+
+- Vi har satt upp en self-hosted runner på våran Azure VM för att köra distributionsjobbet i din CI/CD-pipeline.
+
+**Verktyg och teknologier**:
+
+- Vi använder Azure CLI och cloud-init för Infrastructure as Code (IaC).
+- Vi använder Bash-skript och GitHub Actions för automation.
+- Våran applikation är skriven i C# och .NET Core.
+
+<hr>
