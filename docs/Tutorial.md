@@ -111,58 +111,41 @@ Genom att följa dessa steg har vi nu satt upp ett automatiserat CI-arbetsflöde
 
 Vi ska nu provisionera en virtuell maskin på Azure för att driftsätta vår webbapplikation.
 
-Jag kommer välja att använda Azure CLI för att skapa vår virtuella maskin. Skapa en ny mapp i ditt projekt som heter `infrastructure` och skapa en ny fil som heter `01.provision-vm.sh`.
+Jag kommer välja att använda Azure CLI för att skapa vår virtuella maskin. Skapa en ny mapp i ditt projekt som heter `infrastructure` och skapa en ny fil som heter `provision-vm.sh`.
 I denna fil kommer vi att skriva vår skript för att skapa vår virtuella maskin.
 
 ```bash
 #!/bin/bash
 
-RESOURCE_GROUP="SecureWebAppRG" # Resursgrupp för VM
-VM_NAME="SecureWebAppVM"        # Namn på VM
-VM_PORT="5000"                   # Port för applikationen
-LOCATION="swedencentral"         # Plats för VM
-IMAGE="Ubuntu2204"               # Image för VM
-SIZE="Standard_B1s"              # Storlek på VM, t.ex. Standard_B1s, Standard_D2s_v3
-ADMIN_USERNAME="azureuser"       # Användarnamn för VM
-NSG_NAME="${VM_NAME}-nsg"        # NSG för VM
+# ------------------------------------
+# Sammanfattning av vad som skapas:
+# ------------------------------------
+# Resursgrupp
+# VM med OS-disk
+# Virtuellt nätverk med subnät
+# Offentlig IP-adress
+# Nätverksgränssnitt
+# Nätverkssäkerhetsgrupp med regler för: SSH (port 22) & applikationsport (5000)
+# SSH-nyckelpar för autentisering
+# Lagringskonto för diagnostik
+# ------------------------------------
 
-CLOUD_INIT_FILE="cloud-init_dotnet.yaml" # Cloud-init-fil för att konfigurera VM
+RESOURCE_GROUP="SecureWebAppRG" # Resource group for the VM
+VM_NAME="SecureWebAppVM"        # Name of the VM
+VM_PORT="5000"                  # Port to open for the application
+LOCATION="swedencentral"        # Location of the VM
+IMAGE="Ubuntu2204"              # Image for the VM
+SIZE="Standard_B1s"             # Size of the VM
+ADMIN_USERNAME="azureuser"      # Username for the VM
 
-# Skapa en resursgrupp
+CLOUD_INIT_FILE="cloud-init_dotnet.yaml" # Cloud-init file for configuring the VM
+
+# Create a resource group
 az group create \
     --location $LOCATION \
     --name $RESOURCE_GROUP
 
-# Skapa en NSG
-az network nsg create \
-    --resource-group $RESOURCE_GROUP \
-    --name $NSG_NAME
-
-# Skapa en regel för att tillåta SSH-anslutningar
-az network nsg rule create \
-    --resource-group $RESOURCE_GROUP \
-    --nsg-name $NSG_NAME \
-    --name "AllowSSH" \
-    --priority 1000 \
-    --destination-port-ranges 22 \
-    --direction Inbound \
-    --access Allow \
-    --protocol Tcp \
-    --description "Allow SSH connections"
-
-# Skapa en regel för att tillåta anslutningar till applikationen
-az network nsg rule create \
-    --resource-group $RESOURCE_GROUP \
-    --nsg-name $NSG_NAME \
-    --name "AllowAppTraffic" \
-    --priority 1010 \
-    --destination-port-ranges $VM_PORT \
-    --direction Inbound \
-    --access Allow \
-    --protocol Tcp \
-    --description "Allow application traffic"
-
-# Provisionera en VM
+# Provision a VM
 az vm create \
     --name $VM_NAME \
     --resource-group $RESOURCE_GROUP \
@@ -170,8 +153,13 @@ az vm create \
     --size $SIZE \
     --generate-ssh-keys \
     --admin-username $ADMIN_USERNAME \
-    --custom-data @$CLOUD_INIT_FILE \
-    --nsg $NSG_NAME
+    --custom-data @$CLOUD_INIT_FILE
+
+# Open a port for the application
+az vm open-port \
+    --port $VM_PORT \
+    --resource-group $RESOURCE_GROUP \
+    --name $VM_NAME
 ```
 
 Till denna skapar vi en cloud-init-fil som heter `cloud-init_dotnet.yaml`. Glöm inte att navigera till din infrastruktur-mapp efter att du har skapat den när du följer nästa steg.
@@ -179,24 +167,20 @@ Till denna skapar vi en cloud-init-fil som heter `cloud-init_dotnet.yaml`. Glöm
 ```yaml
 #cloud-config
 
-package_update: true # Uppdatera paketlistan
+package_update: true
 
 runcmd:
-  # Installera nödvändiga verktyg och .NET Runtime 9.0
   - apt-get install -y software-properties-common || exit 1
   - add-apt-repository -y ppa:dotnet/backports || exit 1
   - apt-get update || exit 1
   - apt-get install -y aspnetcore-runtime-9.0 || exit 1
 
-  # Skapa applikationskatalog och sätt rättigheter
   - mkdir -p /opt/SecureWebApp
   - chown -R www-data:www-data /opt/SecureWebApp
 
-  # Hämta och packa upp applikationen
   - systemctl start SecureWebApp.service
   - systemctl status SecureWebApp.service || exit 1
 
-# Skapa en systemd service för att starta applikationen
 write_files:
   - path: /etc/systemd/system/SecureWebApp.service
     content: |
@@ -220,7 +204,6 @@ write_files:
     owner: root:root
     permissions: '0644'
 
-# Aktivera systemd service
 systemd:
   units:
     - name: SecureWebApp.service
@@ -230,13 +213,13 @@ systemd:
 Ge rätt behörigheter till skriptet:
 
 ```bash
-chmod +x 01.provision_vm.sh
+chmod +x provision_vm.sh
 ```
 
 Nu är vi redo att köra skriptet:
 
 ```bash
-./01.provision_vm.sh
+./provision_vm.sh
 ```
 
 När skriptet är klart, kan vi testa att ansluta till vår VM via SSH:
@@ -296,16 +279,6 @@ Nu ska vi sätta upp en Self-Hosted runner.
 5. Välj `Linux` och `x64`.
 6. Följ anvisningarna för att ladda ner och installera runner på din VM.
 
-Vi kan nu byta ut våran `runs-on: ubuntu-latest` till `runs-on: self-hosted` i båda våra jobs i `cicd.yml`.
-
-```yml
-build:
-  runs-on: self-hosted
-
-deploy:
-  runs-on: self-hosted
-```
-
 Nu är vi redo att pusha vår kod till GitHub. Detta kommer att trigga en körning av vårt CI-arbetsflöde, vilket automatiskt kommer att bygga och publicera vår applikation samt distribuera den till vår virtuella maskin på Azure.
 
 OBS! Glöm inte att att din Runner måste vara igång för att ditt arbetsflöde ska fungera.
@@ -322,3 +295,9 @@ För att se om det funkar gör vi en ändring i vår kod. Vi lägger till ett ut
 ```
 
 LETS PUSH IT!
+
+![alt text](./images/{745E19A2-0FB9-491E-8E4C-D7D5C43D4B93}.png)
+
+Nu kan vi navigera till våran VMs publika IP-adress och se att ändringen har tagit effekt och att sidan faktiskt är uppe och rullar.
+
+![alt text](./images/{7B7F3F5F-6D9B-4B0A-8B8B-B139BCCD093D}.png)

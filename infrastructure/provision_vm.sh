@@ -1,11 +1,24 @@
 #!/bin/bash
 
+# ------------------------------------
+# Sammanfattning av vad som skapas:
+# ------------------------------------
+# Resursgrupp
+# VM med OS-disk
+# Virtuellt nätverk med subnät
+# Offentlig IP-adress
+# Nätverksgränssnitt
+# Nätverkssäkerhetsgrupp med regler för: SSH (port 22) & applikationsport (5000)
+# SSH-nyckelpar för autentisering
+# Lagringskonto för diagnostik
+# ------------------------------------
+
 RESOURCE_GROUP="SecureWebAppRG" # Resource group for the VM
 VM_NAME="SecureWebAppVM"        # Name of the VM
 VM_PORT="5000"                  # Port to open for the application
 LOCATION="swedencentral"        # Location of the VM
 IMAGE="Ubuntu2204"              # Image for the VM
-SIZE="Standard_B1s"             # Size of the VM, e.g., Standard_B1s, Standard_D2s_v3
+SIZE="Standard_B1s"             # Size of the VM
 ADMIN_USERNAME="azureuser"      # Username for the VM
 
 CLOUD_INIT_FILE="cloud-init_dotnet.yaml" # Cloud-init file for configuring the VM
