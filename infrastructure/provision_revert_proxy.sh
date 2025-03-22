@@ -30,7 +30,7 @@ az network nsg rule create \
     --resource-group $RESOURCE_GROUP \
     --nsg-name $NSG_NAME \
     --name Allow-HTTP \
-    --priority 1002 \
+    --priority 1001 \
     --destination-port-ranges 80 \
     --protocol Tcp \
     --access Allow \
@@ -41,20 +41,20 @@ az network nsg rule create \
     --resource-group $RESOURCE_GROUP \
     --nsg-name $NSG_NAME \
     --name Allow-SSH-Proxy \
-    --priority 1003 \
+    --priority 1002 \
     --destination-port-ranges 22 \
     --protocol Tcp \
     --access Allow \
     --direction Inbound
 
-# Create a rule to explicitly block public access to the app VM's port 5000
-az network nsg rule create \
-    --resource-group $RESOURCE_GROUP \
-    --nsg-name $NSG_NAME \
-    --name Block-Direct-App-Access \
-    --priority 900 \
-    --destination-port-ranges 5000 \
-    --protocol Tcp \
-    --source-address-prefixes Internet \
-    --access Deny \
-    --direction Inbound
+# # Create a rule to explicitly block public access to the app VM's port 5000
+# az network nsg rule create \
+#     --resource-group $RESOURCE_GROUP \
+#     --nsg-name $NSG_NAME \
+#     --name Block-Direct-App-Access \
+#     --priority 900 \
+#     --destination-port-ranges 5000 \
+#     --protocol Tcp \
+#     --source-address-prefixes Internet \
+#     --access Deny \
+#     --direction Inbound

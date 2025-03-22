@@ -3,16 +3,16 @@
 package_update: true
 
 runcmd:
-  - apt-get install -y software-properties-common || exit 1
-  - add-apt-repository -y ppa:dotnet/backports || exit 1
-  - apt-get update || exit 1
-  - apt-get install -y aspnetcore-runtime-9.0 || exit 1
+  - apt-get install -y software-properties-common
+  - add-apt-repository -y ppa:dotnet/backports
+  - apt-get update
+  - apt-get install -y aspnetcore-runtime-9.0
 
   - mkdir -p /opt/SecureWebApp
   - chown -R www-data:www-data /opt/SecureWebApp
 
   - systemctl start SecureWebApp.service
-  - systemctl status SecureWebApp.service || exit 1
+  - systemctl status SecureWebApp.service
 
 write_files:
   - path: /etc/systemd/system/SecureWebApp.service
