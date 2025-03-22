@@ -6,6 +6,7 @@ VNET_NAME="SecureWebAppVNet"
 SUBNET_NAME="SecureWebAppSubnet"
 NSG_NAME="SecureWebAppNSG"
 PROXY_VM_NAME="ReverseProxyVM"
+APP_VM_NAME="SecureWebAppVM"
 LOCATION="swedencentral"
 IMAGE="Ubuntu2204"
 SIZE="Standard_B1s"
@@ -24,7 +25,7 @@ az vm create \
     --admin-username $ADMIN_USERNAME \
     --custom-data @cloud-init_nginx.yaml
 
-# Open a port for HTTP on the reverse proxy VM with a unique priority
+# Open a port for HTTP on the reverse proxy VM
 az network nsg rule create \
     --resource-group $RESOURCE_GROUP \
     --nsg-name $NSG_NAME \
@@ -35,7 +36,7 @@ az network nsg rule create \
     --access Allow \
     --direction Inbound
 
-# Open a port for SSH on the reverse proxy VM with a unique priority
+# Open a port for SSH on the reverse proxy VM
 az network nsg rule create \
     --resource-group $RESOURCE_GROUP \
     --nsg-name $NSG_NAME \
@@ -44,4 +45,16 @@ az network nsg rule create \
     --destination-port-ranges 22 \
     --protocol Tcp \
     --access Allow \
+    --direction Inbound
+
+# Create a rule to explicitly block public access to the app VM's port 5000
+az network nsg rule create \
+    --resource-group $RESOURCE_GROUP \
+    --nsg-name $NSG_NAME \
+    --name Block-Direct-App-Access \
+    --priority 900 \
+    --destination-port-ranges 5000 \
+    --protocol Tcp \
+    --source-address-prefixes Internet \
+    --access Deny \
     --direction Inbound
