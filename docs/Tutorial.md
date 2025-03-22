@@ -22,7 +22,7 @@ Lite tråkigt är det emellertid att hackergruppen "Cloud Just Means Rain" stän
 
 ## Slutmål
 
-![alt text]({FE1CAB4E-6B51-445A-BC78-72C10B2537C9}.png)
+![alt text](./images/{FE1CAB4E-6B51-445A-BC78-72C10B2537C9}.png)
 
 ### Steg 1: Web-App redo för versionshantering.
 
