@@ -33,7 +33,7 @@ az network nsg create \
 az network nsg rule create \
     --resource-group $RESOURCE_GROUP \
     --nsg-name $NSG_NAME \
-    --name Allow-SSH-App \
+    --name Allow-SSH \
     --protocol tcp \
     --priority 1000 \
     --destination-port-range 22 \
@@ -46,7 +46,6 @@ az network nsg rule create \
     --protocol tcp \
     --priority 1001 \
     --destination-port-range 5000 \
-    --source-address-prefixes 10.1.0.0/24 \
     --access allow
 
 # Associate NSG with the subnet
