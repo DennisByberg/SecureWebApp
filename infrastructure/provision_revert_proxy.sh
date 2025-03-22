@@ -5,28 +5,43 @@ RESOURCE_GROUP="SecureWebAppRG"
 VNET_NAME="SecureWebAppVNet"
 SUBNET_NAME="SecureWebAppSubnet"
 NSG_NAME="SecureWebAppNSG"
-VM_NAME="ReverseProxyVM"
+PROXY_VM_NAME="ReverseProxyVM"
+LOCATION="swedencentral"
+IMAGE="Ubuntu2204"
+SIZE="Standard_B1s"
+ADMIN_USERNAME="azureuser"
 
-# Provision a VM
+# Provision the reverse proxy VM with the updated cloud-init_nginx.yaml
 az vm create \
-    --name $VM_NAME \
+    --name $PROXY_VM_NAME \
     --resource-group $RESOURCE_GROUP \
-    --image Ubuntu2204 \
-    --size Standard_B1s \
+    --image $IMAGE \
+    --size $SIZE \
     --vnet-name $VNET_NAME \
     --subnet $SUBNET_NAME \
+    --nsg $NSG_NAME \
     --generate-ssh-keys \
-    --admin-username azureuser \
+    --admin-username $ADMIN_USERNAME \
     --custom-data @cloud-init_nginx.yaml
 
-# Open a port for the application
-az vm open-port \
-    --port 80 \
+# Open a port for HTTP on the reverse proxy VM with a unique priority
+az network nsg rule create \
     --resource-group $RESOURCE_GROUP \
-    --name $VM_NAME
+    --nsg-name $NSG_NAME \
+    --name Allow-HTTP \
+    --priority 1002 \
+    --destination-port-ranges 80 \
+    --protocol Tcp \
+    --access Allow \
+    --direction Inbound
 
-# Open a port for SSH
-az vm open-port \
-    --port 22 \
+# Open a port for SSH on the reverse proxy VM with a unique priority
+az network nsg rule create \
     --resource-group $RESOURCE_GROUP \
-    --name $VM_NAME
+    --nsg-name $NSG_NAME \
+    --name Allow-SSH-Proxy \
+    --priority 1003 \
+    --destination-port-ranges 22 \
+    --protocol Tcp \
+    --access Allow \
+    --direction Inbound

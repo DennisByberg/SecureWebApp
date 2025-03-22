@@ -5,11 +5,15 @@ RESOURCE_GROUP="SecureWebAppRG"
 VNET_NAME="SecureWebAppVNet"
 SUBNET_NAME="SecureWebAppSubnet"
 NSG_NAME="SecureWebAppNSG"
-VM_NAME="SecureWebAppVM"
+APP_VM_NAME="SecureWebAppVM"
+LOCATION="swedencentral"
+IMAGE="Ubuntu2204"
+SIZE="Standard_B1s"
+ADMIN_USERNAME="azureuser"
 
 # Create a resource group
 az group create \
-    --location swedencentral \
+    --location $LOCATION \
     --name $RESOURCE_GROUP
 
 # Create a virtual network
@@ -51,14 +55,15 @@ az network vnet subnet update \
     --name $SUBNET_NAME \
     --network-security-group $NSG_NAME
 
-# Provision a VM with cloud-init
+# Provision the application server VM with cloud-init
 az vm create \
-    --name $VM_NAME \
+    --name $APP_VM_NAME \
     --resource-group $RESOURCE_GROUP \
-    --image Ubuntu2204 \
-    --size Standard_B1s \
+    --image $IMAGE \
+    --size $SIZE \
     --vnet-name $VNET_NAME \
     --subnet $SUBNET_NAME \
+    --nsg $NSG_NAME \
     --generate-ssh-keys \
-    --admin-username azureuser \
+    --admin-username $ADMIN_USERNAME \
     --custom-data @cloud-init_dotnet.yaml
