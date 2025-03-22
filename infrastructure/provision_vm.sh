@@ -40,14 +40,15 @@ az network nsg rule create \
     --access allow
 
 # Create a rule to allow access to the application port
-# az network nsg rule create \
-#     --resource-group $RESOURCE_GROUP \
-#     --nsg-name $NSG_NAME \
-#     --name Allow-App-Port \
-#     --protocol tcp \
-#     --priority 1001 \
-#     --destination-port-range 5000 \
-#     --access allow
+az network nsg rule create \
+    --resource-group $RESOURCE_GROUP \
+    --nsg-name $NSG_NAME \
+    --name Allow-App-Port \
+    --protocol tcp \
+    --priority 1001 \
+    --destination-port-range 5000 \
+    --source-address-prefixes 10.1.0.0/24 \
+    --access allow
 
 # Associate NSG with the subnet
 az network vnet subnet update \
