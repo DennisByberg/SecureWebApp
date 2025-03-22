@@ -1,7 +1,7 @@
 #!/bin/bash
 
-RESOURCE_GROUP="SecureWebAppRG2"
-VM_NAME="SecureWebAppVM2"
+RESOURCE_GROUP="SecureWebAppRG"
+VM_NAME="SecureWebAppVM"
 
 # Create a resource group
 az group create \
@@ -23,3 +23,14 @@ az vm open-port \
     --port 5000 \
     --resource-group $RESOURCE_GROUP \
     --name $VM_NAME
+
+# -------------------------------------------
+# Skapar:
+# Virtual machine: SecureWebAppVM
+#    - default allowed port: 22 : Prio 1000
+#    - custom allowed port: 5000 : Prio 900
+# Disk
+# SecureWebAppVMNSG - Network security group
+# SecureWebAppVMPublicIP - Public IP address
+# SecureWebAppVMVMNic - Network Interface
+# SecureWebAppVMVNET - Virtual network
