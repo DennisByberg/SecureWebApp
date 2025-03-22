@@ -1,7 +1,7 @@
 #!/bin/bash
 
-RESOURCE_GROUP="SecureWebAppRG"
-VM_NAME="SecureWebAppVM"
+RESOURCE_GROUP="SecureWebAppRG2"
+VM_NAME="SecureWebAppVM2"
 
 # Create a resource group
 az group create \
